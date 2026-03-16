@@ -61,19 +61,24 @@ export const useAppState = () => {
     fetchData();
   }, []);
 
-  const login = async (user: User) => {
+  const login = async (email: string) => {
     try {
       const res = await fetch('/api/users/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email })
+        body: JSON.stringify({ email })
       });
       if (res.ok) {
         const loggedInUser = await res.json();
         setState(prev => ({ ...prev, currentUser: loggedInUser }));
+        return null;
+      } else {
+        const data = await res.json();
+        return data.error || 'Identifiants incorrects';
       }
     } catch (e) {
       console.error('Login failed', e);
+      return 'Erreur de connexion au serveur';
     }
   };
 
@@ -95,9 +100,14 @@ export const useAppState = () => {
           users: [...prev.users, newUser],
           currentUser: newUser
         }));
+        return null;
+      } else {
+        const data = await res.json();
+        return data.error || 'Erreur lors de l\'inscription';
       }
     } catch (e) {
       console.error('Signup failed', e);
+      return 'Erreur de connexion au serveur';
     }
   };
 

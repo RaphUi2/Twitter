@@ -3,8 +3,8 @@ import { Twitter, Mail, Lock, User as UserIcon, ArrowLeft } from 'lucide-react';
 import { User } from '../types';
 
 interface AuthProps {
-  onLogin: (user: User) => void;
-  onSignup: (user: User) => void;
+  onLogin: (email: string) => Promise<string | null>;
+  onSignup: (user: User) => Promise<string | null>;
   users: User[];
 }
 
@@ -15,40 +15,55 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup, users }) => {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    if (isLogin) {
-      const user = users.find(u => (u.email === email || u.username === email));
-      if (user) {
-        onLogin(user);
+    try {
+      if (isLogin) {
+        if (!email) {
+          setError('Email ou nom d\'utilisateur obligatoire');
+          setIsLoading(false);
+          return;
+        }
+        const errorMsg = await onLogin(email);
+        if (errorMsg) {
+          setError(errorMsg);
+        }
       } else {
-        setError('Identifiants incorrects');
+        if (!email || !password || !username || !displayName) {
+          setError('Tous les champs sont obligatoires');
+          setIsLoading(false);
+          return;
+        }
+        
+        const newUser: User = {
+          id: `user-${Date.now()}`,
+          username,
+          displayName,
+          email,
+          bio: '',
+          location: '',
+          joinDate: new Date().toISOString(),
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+          coverImage: 'https://picsum.photos/seed/default/1500/500',
+          followersCount: 0,
+          followingCount: 0,
+          tweetsCount: 0,
+          isVerified: false
+        };
+        const errorMsg = await onSignup(newUser);
+        if (errorMsg) {
+          setError(errorMsg);
+        }
       }
-    } else {
-      if (!email || !password || !username || !displayName) {
-        setError('Tous les champs sont obligatoires');
-        return;
-      }
-      
-      const newUser: User = {
-        id: `user-${Date.now()}`,
-        username,
-        displayName,
-        email,
-        bio: '',
-        location: '',
-        joinDate: new Date().toISOString(),
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-        coverImage: 'https://picsum.photos/seed/default/1500/500',
-        followersCount: 0,
-        followingCount: 0,
-        tweetsCount: 0,
-        isVerified: false
-      };
-      onSignup(newUser);
+    } catch (err) {
+      setError('Une erreur est survenue');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -121,9 +136,10 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup, users }) => {
 
           <button
             type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-full transition-colors shadow-sm"
+            disabled={isLoading}
+            className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-bold py-3 rounded-full transition-colors shadow-sm"
           >
-            {isLogin ? 'Se connecter' : 'Créer un compte'}
+            {isLoading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer un compte')}
           </button>
         </form>
 
