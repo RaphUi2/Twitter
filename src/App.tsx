@@ -26,7 +26,7 @@ import {
   Moon,
   Sun,
   MoreHorizontal,
-  Quote,
+  Sparkles,
   Users,
   ListTodo,
   Plus,
@@ -49,7 +49,9 @@ export default function App() {
     exportData,
     resetData,
     updateProfile,
-    markNotificationsRead
+    markNotificationsRead,
+    setAiPersonality,
+    sendGrokMessage
   } = useAppState();
 
   const [activeTab, setActiveTab] = React.useState('home');
@@ -57,8 +59,8 @@ export default function App() {
   const [viewingUserId, setViewingUserId] = React.useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [replyingTo, setReplyingTo] = React.useState<Tweet | null>(null);
-  const [quotingTweet, setQuotingTweet] = React.useState<Tweet | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [grokInput, setGrokInput] = React.useState('');
   const [isMobileComposeOpen, setIsMobileComposeOpen] = React.useState(false);
 
   if (!state.currentUser) {
@@ -76,16 +78,12 @@ export default function App() {
       likes: [],
       retweets: [],
       replies: [],
-      media,
-      quoteTweetId: quotingTweet?.id
+      media
     };
 
     if (replyingTo) {
       addTweet(newTweet);
       setReplyingTo(null);
-    } else if (quotingTweet) {
-      addTweet(newTweet);
-      setQuotingTweet(null);
     } else {
       addTweet(newTweet);
     }
@@ -147,9 +145,6 @@ export default function App() {
                 replyingTo={replyingTo}
                 replyingToUsername={state.users.find(u => u.id === replyingTo?.userId)?.username || replyingTo?.userId}
                 onCancelReply={() => setReplyingTo(null)}
-                quotingTweet={quotingTweet}
-                quotingTweetUsername={state.users.find(u => u.id === quotingTweet?.userId)?.username || quotingTweet?.userId}
-                onCancelQuote={() => setQuotingTweet(null)}
               />
             </div>
 
@@ -184,13 +179,7 @@ export default function App() {
                       setReplyingTo(t);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    onQuote={(t) => {
-                      setQuotingTweet(t);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
                     onProfileClick={handleProfileClick}
-                    allTweets={state.tweets}
-                    allUsers={state.users}
                   />
                 );
               })}
@@ -502,6 +491,60 @@ export default function App() {
           </div>
         );
 
+      case 'grok':
+        return (
+          <div className="flex-1 min-h-screen border-r border-gray-200 dark:border-gray-800 flex flex-col">
+            <div className="hidden sm:flex sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10 p-4 border-b border-gray-200 dark:border-gray-800 justify-between items-center">
+              <h1 className="text-xl font-bold flex items-center">
+                <Sparkles className="w-5 h-5 mr-2 text-blue-500" />
+                Twitter AI
+              </h1>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {state.grokMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                  <Sparkles className="w-16 h-16 text-blue-500 mb-4 animate-pulse" />
+                  <h2 className="text-2xl font-bold mb-2">Posez n'importe quelle question à l'IA</h2>
+                  <p className="text-gray-500">L'IA de Twitter est là pour vous aider à naviguer et comprendre le monde.</p>
+                </div>
+              ) : (
+                state.grokMessages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] p-3 rounded-2xl ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-900'}`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!grokInput.trim()) return;
+                  sendGrokMessage(grokInput);
+                  setGrokInput('');
+                }}
+                className="relative"
+              >
+                <input 
+                  type="text" 
+                  value={grokInput}
+                  onChange={(e) => setGrokInput(e.target.value)}
+                  placeholder="Demandez à l'IA..."
+                  className="w-full bg-gray-100 dark:bg-gray-900 border-none rounded-full py-3 pl-4 pr-12 focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <button 
+                  type="submit"
+                  className="absolute right-2 top-1.5 p-1.5 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+                >
+                  <Sparkles className="w-5 h-5" />
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+
       case 'settings':
         return (
           <div className="flex-1 min-h-screen border-r border-gray-200 dark:border-gray-800">
@@ -522,6 +565,24 @@ export default function App() {
                   >
                     {state.theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6 text-yellow-500" />}
                   </button>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">IA</h2>
+                <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                  <p className="font-bold mb-2">Personnalité de l'IA</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['helpful', 'sarcastic', 'visionary'] as const).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setAiPersonality(p)}
+                        className={`py-2 px-3 rounded-lg text-sm font-bold transition-colors ${state.aiPersonality === p ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}
+                      >
+                        {p === 'helpful' ? 'Utile' : p === 'sarcastic' ? 'Sarcastique' : 'Visionnaire'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </section>
 
@@ -637,7 +698,7 @@ export default function App() {
             className="sm:hidden fixed inset-0 bg-white dark:bg-black z-[100] flex flex-col"
           >
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-              <button onClick={() => { setIsMobileComposeOpen(false); setReplyingTo(null); setQuotingTweet(null); }} className="text-gray-900 dark:text-gray-100 font-bold">Annuler</button>
+              <button onClick={() => { setIsMobileComposeOpen(false); setReplyingTo(null); }} className="text-gray-900 dark:text-gray-100 font-bold">Annuler</button>
               <div className="text-blue-500 font-bold">Nouveau Post</div>
             </div>
             <div className="flex-1 overflow-y-auto">
@@ -650,9 +711,6 @@ export default function App() {
                 replyingTo={replyingTo}
                 replyingToUsername={state.users.find(u => u.id === replyingTo?.userId)?.username || replyingTo?.userId}
                 onCancelReply={() => setReplyingTo(null)}
-                quotingTweet={quotingTweet}
-                quotingTweetUsername={state.users.find(u => u.id === quotingTweet?.userId)?.username || quotingTweet?.userId}
-                onCancelQuote={() => setQuotingTweet(null)}
                 placeholder="Quoi de neuf ?"
               />
             </div>

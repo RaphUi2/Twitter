@@ -27,7 +27,6 @@ export interface Tweet {
   media?: string[];
   isPinned?: boolean;
   isSponsored?: boolean;
-  quoteTweetId?: string;
 }
 
 export interface Notification {
@@ -81,4 +80,6 @@ export interface AppState {
   communities: Community[];
   following: string[]; // IDs of users the current user follows
   theme: 'light' | 'dark';
+  aiPersonality: 'helpful' | 'sarcastic' | 'visionary';
+  grokMessages: { role: 'user' | 'assistant', content: string, timestamp: string }[];
 }

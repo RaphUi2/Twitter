@@ -12,6 +12,7 @@ import {
   Settings,
   List as ListIcon,
   Bookmark,
+  Sparkles,
   Users,
   Plus,
   Twitter
@@ -41,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'explore', label: 'Explorer', icon: Search },
     { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadNotifications },
     { id: 'messages', label: 'Messages', icon: Mail },
+    { id: 'grok', label: 'Twitter AI', icon: Sparkles },
     { id: 'bookmarks', label: 'Signets', icon: Bookmark },
     { id: 'lists', label: 'Listes', icon: ListIcon },
     { id: 'communities', label: 'Communautés', icon: Users },

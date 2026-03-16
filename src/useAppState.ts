@@ -31,7 +31,9 @@ const getInitialState = (): AppState => {
       { id: 'comm-2', name: 'Amateurs de Café', description: 'Partagez vos meilleurs grains', memberCount: 850, icon: '☕' }
     ],
     following: ['user-1', 'user-2'], // Default following some accounts
-    theme: 'dark'
+    theme: 'dark',
+    aiPersonality: 'helpful',
+    grokMessages: []
   };
 };
 
@@ -220,6 +222,34 @@ export const useAppState = () => {
     }));
   };
 
+  const setAiPersonality = (personality: 'helpful' | 'sarcastic' | 'visionary') => {
+    setState(prev => ({ ...prev, aiPersonality: personality }));
+  };
+
+  const sendGrokMessage = async (content: string) => {
+    const userMsg = { role: 'user' as const, content, timestamp: new Date().toISOString() };
+    setState(prev => ({
+      ...prev,
+      grokMessages: [...prev.grokMessages, userMsg]
+    }));
+
+    // Simulate AI response
+    setTimeout(() => {
+      let response = "Je suis l'IA de Twitter. Comment puis-je vous aider ?";
+      if (state.aiPersonality === 'sarcastic') {
+        response = "Oh, encore une question passionnante... Je plaisante. Je suis là pour vous aider, je suppose.";
+      } else if (state.aiPersonality === 'visionary') {
+        response = "Je vois un futur où l'information circule librement et instantanément. Votre question s'inscrit dans cette vision.";
+      }
+
+      const aiMsg = { role: 'assistant' as const, content: response, timestamp: new Date().toISOString() };
+      setState(prev => ({
+        ...prev,
+        grokMessages: [...prev.grokMessages, userMsg, aiMsg]
+      }));
+    }, 1000);
+  };
+
   // Simulation of real-time activity removed for real backend
   
   return {
@@ -238,6 +268,8 @@ export const useAppState = () => {
     markNotificationsRead,
     resetData,
     exportData,
-    updateProfile
+    updateProfile,
+    setAiPersonality,
+    sendGrokMessage
   };
 };

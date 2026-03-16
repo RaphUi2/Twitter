@@ -10,9 +10,6 @@ interface TweetComposerProps {
   replyingTo?: Tweet | null;
   replyingToUsername?: string;
   onCancelReply?: () => void;
-  quotingTweet?: Tweet | null;
-  quotingTweetUsername?: string;
-  onCancelQuote?: () => void;
 }
 
 export const TweetComposer: React.FC<TweetComposerProps> = ({ 
@@ -21,10 +18,7 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
   placeholder = "Quoi de neuf ?",
   replyingTo,
   replyingToUsername,
-  onCancelReply,
-  quotingTweet,
-  quotingTweetUsername,
-  onCancelQuote
+  onCancelReply
 }) => {
   const [content, setContent] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -75,27 +69,10 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onFocus={() => setIsFocused(true)}
-            placeholder={replyingTo ? "Poster votre réponse" : quotingTweet ? "Ajouter un commentaire" : placeholder}
-            className="w-full bg-transparent text-xl outline-none resize-none pt-2 min-h-[50px] placeholder-gray-500"
-            rows={isFocused || replyingTo || quotingTweet ? 3 : 1}
+            placeholder={replyingTo ? "Poster votre réponse" : placeholder}
+            className="w-full bg-transparent text-white text-xl outline-none resize-none pt-2 min-h-[50px] placeholder-gray-500"
+            rows={isFocused || replyingTo ? 3 : 1}
           />
-
-          {quotingTweet && (
-            <div className="mt-2 p-3 border border-gray-200 dark:border-gray-800 rounded-2xl relative">
-              <button 
-                onClick={onCancelQuote}
-                className="absolute top-2 right-2 p-1 bg-black/50 text-white hover:bg-black/70 rounded-full transition-colors z-10"
-              >
-                <X className="w-3 h-3" />
-              </button>
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="font-bold text-sm">@{quotingTweetUsername}</span>
-              </div>
-              <p className="text-sm line-clamp-2 text-gray-600 dark:text-gray-400">
-                {quotingTweet.content}
-              </p>
-            </div>
-          )}
           
           <div className={`flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-900 transition-opacity ${isFocused || replyingTo ? 'opacity-100' : 'opacity-100'}`}>
           <div className="flex items-center space-x-1 text-blue-500">

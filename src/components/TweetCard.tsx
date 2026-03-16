@@ -7,8 +7,7 @@ import {
   MoreHorizontal, 
   CheckCircle2,
   Trash2,
-  Pin,
-  Quote
+  Pin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Tweet, User } from '../types';
@@ -23,10 +22,7 @@ interface TweetCardProps {
   onRetweet: (id: string) => void;
   onDelete: (id: string) => void;
   onReply: (tweet: Tweet) => void;
-  onQuote: (tweet: Tweet) => void;
   onProfileClick: (userId: string) => void;
-  allTweets?: Tweet[];
-  allUsers?: User[];
 }
 
 export const TweetCard: React.FC<TweetCardProps> = ({ 
@@ -37,10 +33,7 @@ export const TweetCard: React.FC<TweetCardProps> = ({
   onRetweet, 
   onDelete,
   onReply,
-  onQuote,
-  onProfileClick,
-  allTweets = [],
-  allUsers = []
+  onProfileClick
 }) => {
   const [isLiked, setIsLiked] = useState(tweet.likes.includes(currentUser?.id || ''));
   const [isRetweeted, setIsRetweeted] = useState(tweet.retweets.includes(currentUser?.id || ''));
@@ -67,14 +60,6 @@ export const TweetCard: React.FC<TweetCardProps> = ({
     e.stopPropagation();
     onDelete(tweet.id);
   };
-
-  const handleQuote = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onQuote(tweet);
-  };
-
-  const quotedTweet = tweet.quoteTweetId ? allTweets.find(t => t.id === tweet.quoteTweetId) : null;
-  const quotedAuthor = quotedTweet ? allUsers.find(u => u.id === quotedTweet.userId) : null;
 
   return (
     <motion.div 
@@ -133,32 +118,6 @@ export const TweetCard: React.FC<TweetCardProps> = ({
             {tweet.content}
           </p>
 
-          {quotedTweet && quotedAuthor && (
-            <div 
-              onClick={(e) => {
-                e.stopPropagation();
-                // Optional: navigate to quoted tweet
-              }}
-              className="mt-3 p-3 border border-gray-200 dark:border-gray-800 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
-            >
-              <div className="flex items-center space-x-2 mb-1">
-                <img src={quotedAuthor.avatar} alt="" className="w-5 h-5 rounded-full" />
-                <span className="font-bold text-sm">{quotedAuthor.displayName}</span>
-                <span className="text-gray-500 text-sm">@{quotedAuthor.username}</span>
-                <span className="text-gray-500 text-sm">·</span>
-                <span className="text-gray-500 text-sm">
-                  {formatDistanceToNow(new Date(quotedTweet.timestamp), { locale: fr })}
-                </span>
-              </div>
-              <p className="text-sm line-clamp-3">{quotedTweet.content}</p>
-              {quotedTweet.media && quotedTweet.media.length > 0 && (
-                <div className="mt-2 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800">
-                  <img src={quotedTweet.media[0]} alt="" className="w-full h-32 object-cover" referrerPolicy="no-referrer" />
-                </div>
-              )}
-            </div>
-          )}
-
           {tweet.media && tweet.media.length > 0 && (
             <div className="mt-3 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800">
               <img 
@@ -189,15 +148,6 @@ export const TweetCard: React.FC<TweetCardProps> = ({
                 <Repeat2 className={`w-4 h-4 ${isRetweeted ? 'stroke-[3px]' : ''}`} />
               </div>
               <span className="text-xs group-hover:text-green-500">{retweetsCount}</span>
-            </button>
-
-            <button 
-              onClick={handleQuote}
-              className="flex items-center space-x-2 group"
-            >
-              <div className="p-2 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-500 rounded-full transition-colors">
-                <Quote className="w-4 h-4" />
-              </div>
             </button>
 
             <button 
