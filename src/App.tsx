@@ -135,17 +135,33 @@ export default function App() {
               <div className="flex">
                 <button 
                   onClick={() => setFeedType('for-you')}
-                  className={`flex-1 py-4 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors relative font-bold ${feedType === 'for-you' ? '' : 'text-gray-500'}`}
+                  className={`flex-1 py-4 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors relative flex justify-center items-center font-bold ${feedType === 'for-you' ? '' : 'text-gray-500'}`}
                 >
-                  Pour vous
-                  {feedType === 'for-you' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-blue-500 rounded-full" />}
+                  <span className="relative">
+                    Pour vous
+                    {feedType === 'for-you' && (
+                      <motion.div 
+                        layoutId="feedTypeIndicator"
+                        className="absolute -bottom-4 left-0 right-0 h-1 bg-blue-500 rounded-full" 
+                        style={{ minWidth: '56px' }}
+                      />
+                    )}
+                  </span>
                 </button>
                 <button 
                   onClick={() => setFeedType('following')}
-                  className={`flex-1 py-4 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors relative font-bold ${feedType === 'following' ? '' : 'text-gray-500'}`}
+                  className={`flex-1 py-4 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors relative flex justify-center items-center font-bold ${feedType === 'following' ? '' : 'text-gray-500'}`}
                 >
-                  Abonnements
-                  {feedType === 'following' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-blue-500 rounded-full" />}
+                  <span className="relative">
+                    Abonnements
+                    {feedType === 'following' && (
+                      <motion.div 
+                        layoutId="feedTypeIndicator"
+                        className="absolute -bottom-4 left-0 right-0 h-1 bg-blue-500 rounded-full" 
+                        style={{ minWidth: '80px' }}
+                      />
+                    )}
+                  </span>
                 </button>
               </div>
             </div>
@@ -366,11 +382,18 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex border-b border-gray-200 dark:border-gray-800 mt-4">
-              {['Posts', 'Réponses', 'Médias', 'J\'aime'].map((tab, i) => (
-                <button key={tab} className={`flex-1 py-4 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors relative font-bold ${i === 0 ? '' : 'text-gray-500'}`}>
-                  {tab}
-                  {i === 0 && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full" />}
+            <div className="flex border-b border-gray-200 dark:border-gray-800 mt-4 overflow-x-auto no-scrollbar scrollbar-hide">
+              {['Posts', 'Réponses', 'Médias', "J'aime"].map((tab, i) => (
+                <button key={tab} className={`flex-none min-w-[25%] sm:flex-1 py-4 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors relative flex justify-center items-center font-bold text-sm sm:text-base ${i === 0 ? '' : 'text-gray-500'}`}>
+                  <span className="relative">
+                    {tab}
+                    {i === 0 && (
+                      <motion.div 
+                        layoutId="profileTabIndicator"
+                        className="absolute -bottom-4 left-0 right-0 h-1 bg-blue-500 rounded-full" 
+                      />
+                    )}
+                  </span>
                 </button>
               ))}
             </div>
