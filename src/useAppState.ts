@@ -5,18 +5,7 @@ import { INITIAL_USERS, INITIAL_TWEETS } from './constants';
 const STORAGE_KEY = 'twitter_clone_state';
 
 const getInitialState = (): AppState => {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      return {
-        ...parsed
-      };
-    } catch (e) {
-      console.error('Failed to parse saved state', e);
-    }
-  }
-  return {
+  const defaultState: AppState = {
     currentUser: null,
     users: INITIAL_USERS,
     tweets: INITIAL_TWEETS,
@@ -30,11 +19,29 @@ const getInitialState = (): AppState => {
       { id: 'comm-1', name: 'Développeurs React', description: 'Une communauté pour les passionnés de React', memberCount: 1250, icon: '⚛️' },
       { id: 'comm-2', name: 'Amateurs de Café', description: 'Partagez vos meilleurs grains', memberCount: 850, icon: '☕' }
     ],
-    following: ['user-1', 'user-2'], // Default following some accounts
+    following: ['user-1', 'user-2'],
+    bookmarks: [],
     theme: 'dark',
     aiPersonality: 'helpful',
     grokMessages: []
   };
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      return {
+        ...defaultState,
+        ...parsed,
+        // Ensure bookmarks exists even if parsed doesn't have it
+        bookmarks: parsed.bookmarks || [],
+        following: parsed.following || defaultState.following,
+      };
+    } catch (e) {
+      console.error('Failed to parse saved state', e);
+    }
+  }
+  return defaultState;
 };
 
 export const useAppState = () => {
@@ -95,11 +102,21 @@ export const useAppState = () => {
       });
       if (res.ok) {
         const newUser = await res.json();
+        // Clear local state specific to previous session when signing up
         setState(prev => ({
           ...prev,
           users: [...prev.users, newUser],
-          currentUser: newUser
+          currentUser: newUser,
+          notifications: [],
+          bookmarks: [],
+          grokMessages: []
         }));
+
+        // Simulate a welcome notification from a "real" person
+        setTimeout(() => {
+          addNotification(newUser.id, 'user-1', 'follow');
+        }, 3000);
+
         return null;
       } else {
         const data = await res.json();
@@ -109,6 +126,31 @@ export const useAppState = () => {
       console.error('Signup failed', e);
       return 'Erreur de connexion au serveur';
     }
+  };
+
+  const guestLogin = () => {
+    const guestUser: User = {
+      id: 'guest-' + Date.now(),
+      username: 'invite',
+      displayName: 'Invité',
+      email: 'guest@example.com',
+      bio: 'Utilisateur invité',
+      location: '',
+      joinDate: new Date().toISOString(),
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=guest',
+      coverImage: 'https://picsum.photos/seed/guest/1500/500',
+      followersCount: 0,
+      followingCount: 0,
+      tweetsCount: 0,
+      isVerified: false
+    };
+    setState(prev => ({
+      ...prev,
+      currentUser: guestUser,
+      notifications: [],
+      bookmarks: [],
+      grokMessages: []
+    }));
   };
 
   const addTweet = async (tweet: Tweet) => {
@@ -150,6 +192,11 @@ export const useAppState = () => {
           ...prev,
           tweets: prev.tweets.map(t => t.id === tweetId ? updatedTweet : t)
         }));
+
+        // Generate notification if liked (not unliked)
+        if (updatedTweet.likes.includes(userId)) {
+          addNotification(updatedTweet.userId, userId, 'like', tweetId);
+        }
       }
     } catch (e) {
       console.error('Toggle like failed', e);
@@ -169,18 +216,34 @@ export const useAppState = () => {
           ...prev,
           tweets: prev.tweets.map(t => t.id === tweetId ? updatedTweet : t)
         }));
+
+        // Generate notification if retweeted (not unretweeted)
+        if (updatedTweet.retweets.includes(userId)) {
+          addNotification(updatedTweet.userId, userId, 'retweet', tweetId);
+        }
       }
     } catch (e) {
       console.error('Toggle retweet failed', e);
     }
   };
 
-  const followUser = (targetUserId: string) => {
+  const followUser = async (targetUserId: string) => {
     if (!state.currentUser) return;
-    setState(prev => ({
-      ...prev,
-      following: [...prev.following, targetUserId]
-    }));
+    try {
+      await fetch(`/api/users/${targetUserId}/follow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: state.currentUser.id })
+      });
+      
+      setState(prev => ({
+        ...prev,
+        following: [...prev.following, targetUserId]
+      }));
+      addNotification(targetUserId, state.currentUser.id, 'follow');
+    } catch (e) {
+      console.error('Follow failed', e);
+    }
   };
 
   const unfollowUser = (targetUserId: string) => {
@@ -189,6 +252,34 @@ export const useAppState = () => {
       ...prev,
       following: prev.following.filter(id => id !== targetUserId)
     }));
+  };
+
+  const toggleBookmark = (tweetId: string) => {
+    setState(prev => {
+      const isBookmarked = prev.bookmarks.includes(tweetId);
+      return {
+        ...prev,
+        bookmarks: isBookmarked 
+          ? prev.bookmarks.filter(id => id !== tweetId)
+          : [...prev.bookmarks, tweetId]
+      };
+    });
+  };
+
+  const togglePin = (tweetId: string) => {
+    if (!state.currentUser) return;
+    setState(prev => {
+      const isPinned = prev.currentUser?.pinnedTweetId === tweetId;
+      const updatedUser = {
+        ...prev.currentUser!,
+        pinnedTweetId: isPinned ? undefined : tweetId
+      };
+      return {
+        ...prev,
+        currentUser: updatedUser,
+        users: prev.users.map(u => u.id === updatedUser.id ? updatedUser : u)
+      };
+    });
   };
 
   const toggleTheme = () => {
@@ -206,6 +297,25 @@ export const useAppState = () => {
     setState(prev => ({
       ...prev,
       notifications: prev.notifications.map(n => ({ ...n, isRead: true }))
+    }));
+  };
+
+  const addNotification = (userId: string, fromUserId: string, type: 'like' | 'retweet' | 'reply' | 'follow' | 'mention', tweetId?: string) => {
+    if (userId === fromUserId) return; // Don't notify self
+    
+    const newNotification: Notification = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      userId,
+      fromUserId,
+      type,
+      tweetId,
+      timestamp: new Date().toISOString(),
+      isRead: false
+    };
+    
+    setState(prev => ({
+      ...prev,
+      notifications: [newNotification, ...prev.notifications]
     }));
   };
 
@@ -267,14 +377,18 @@ export const useAppState = () => {
     login,
     logout,
     signup,
+    guestLogin,
     addTweet,
     deleteTweet,
     toggleLike,
     toggleRetweet,
     followUser,
     unfollowUser,
+    toggleBookmark,
+    togglePin,
     toggleTheme,
     addMessage,
+    addNotification,
     markNotificationsRead,
     resetData,
     exportData,

@@ -83,6 +83,9 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
               <List className="w-5 h-5" />
             </button>
             <button className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors">
+              <BarChart2 className="w-5 h-5" />
+            </button>
+            <button className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors">
               <Smile className="w-5 h-5" />
             </button>
             <button className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors">
@@ -129,6 +132,9 @@ export const TweetComposer: React.FC<TweetComposerProps> = ({
               </div>
             )}
             
+            <button className="text-blue-500 font-bold text-sm hover:underline mr-4">
+              Brouillons
+            </button>
             <button
               disabled={!content.trim() || isOverLimit}
               onClick={handleTweet}

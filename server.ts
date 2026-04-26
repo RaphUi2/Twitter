@@ -75,6 +75,54 @@ const INITIAL_DATA = {
       followingCount: 320,
       tweetsCount: 850,
       isVerified: true
+    },
+    {
+      id: 'user-3',
+      username: 'code_ninja',
+      displayName: 'Code Ninja',
+      email: 'ninja@code.com',
+      bio: 'I speak in JavaScript and TypeScript. 💻',
+      location: 'Tokyo, Japan',
+      website: 'codeninja.io',
+      joinDate: '2023-02-10',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ninja',
+      coverImage: 'https://picsum.photos/seed/ninja/1500/500',
+      followersCount: 5400,
+      followingCount: 150,
+      tweetsCount: 420,
+      isVerified: false
+    },
+    {
+      id: 'user-4',
+      username: 'news_flash',
+      displayName: 'News Flash',
+      email: 'news@flash.com',
+      bio: 'Breaking news from around the world. 🌍',
+      location: 'New York, NY',
+      website: 'newsflash.com',
+      joinDate: '2020-11-05',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=news',
+      coverImage: 'https://picsum.photos/seed/news/1500/500',
+      followersCount: 45000,
+      followingCount: 120,
+      tweetsCount: 15000,
+      isVerified: true
+    },
+    {
+      id: 'user-5',
+      username: 'travel_bug',
+      displayName: 'Travel Bug',
+      email: 'travel@bug.com',
+      bio: 'Exploring the hidden gems of the planet. ✈️',
+      location: 'Nomadic',
+      website: 'travelbug.blog',
+      joinDate: '2022-08-30',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=travel',
+      coverImage: 'https://picsum.photos/seed/travel/1500/500',
+      followersCount: 3200,
+      followingCount: 800,
+      tweetsCount: 210,
+      isVerified: false
     }
   ]
 };
@@ -192,6 +240,26 @@ async function startServer() {
       res.json(tweet);
     } else {
       res.status(404).json({ error: "Tweet not found" });
+    }
+  });
+
+  app.post("/api/users/:id/follow", (req, res) => {
+    const { userId } = req.body; // The user who is following
+    const targetId = req.params.id; // The user being followed
+    const db = readDB();
+    
+    const user = db.users.find((u: any) => u.id === userId);
+    const target = db.users.find((u: any) => u.id === targetId);
+
+    if (user && target) {
+      // In a real app we'd have a follows table/collection
+      // Here we just increment counts as a simulation
+      target.followersCount += 1;
+      user.followingCount += 1;
+      writeDB(db);
+      res.json({ success: true, targetFollowers: target.followersCount });
+    } else {
+      res.status(404).json({ error: "User not found" });
     }
   });
 

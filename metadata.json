@@ -1,5 +1,5 @@
 {
   "name": "Twitter",
-  "description": "",
+  "description": "Une application de réseau social complète avec IA Grok, communautés, notifications en temps réel simulées et mode invité.",
   "requestFramePermissions": []
 }

@@ -13,6 +13,7 @@ export interface User {
   followingCount: number;
   tweetsCount: number;
   isVerified: boolean;
+  pinnedTweetId?: string;
   password?: string;
 }
 
@@ -79,6 +80,7 @@ export interface AppState {
   lists: List[];
   communities: Community[];
   following: string[]; // IDs of users the current user follows
+  bookmarks: string[]; // IDs of bookmarked tweets
   theme: 'light' | 'dark';
   aiPersonality: 'helpful' | 'sarcastic' | 'visionary';
   grokMessages: { role: 'user' | 'assistant', content: string, timestamp: string }[];

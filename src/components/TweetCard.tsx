@@ -7,7 +7,8 @@ import {
   MoreHorizontal, 
   CheckCircle2,
   Trash2,
-  Pin
+  Pin,
+  Bookmark
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Tweet, User } from '../types';
@@ -23,6 +24,10 @@ interface TweetCardProps {
   onDelete: (id: string) => void;
   onReply: (tweet: Tweet) => void;
   onProfileClick: (userId: string) => void;
+  onBookmark?: (id: string) => void;
+  isBookmarked?: boolean;
+  onPin?: (id: string) => void;
+  isPinned?: boolean;
 }
 
 export const TweetCard: React.FC<TweetCardProps> = ({ 
@@ -33,7 +38,11 @@ export const TweetCard: React.FC<TweetCardProps> = ({
   onRetweet, 
   onDelete,
   onReply,
-  onProfileClick
+  onProfileClick,
+  onBookmark,
+  isBookmarked = false,
+  onPin,
+  isPinned = false
 }) => {
   const [isLiked, setIsLiked] = useState(tweet.likes.includes(currentUser?.id || ''));
   const [isRetweeted, setIsRetweeted] = useState(tweet.retweets.includes(currentUser?.id || ''));
@@ -102,6 +111,15 @@ export const TweetCard: React.FC<TweetCardProps> = ({
             <div className="flex items-center space-x-2">
               {currentUser?.id === author.id && (
                 <button 
+                  onClick={(e) => { e.stopPropagation(); onPin?.(tweet.id); }}
+                  className={`p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors ${isPinned ? 'text-blue-500' : 'text-gray-500'}`}
+                  title={isPinned ? "Désépingler" : "Épingler"}
+                >
+                  <Pin className={`w-4 h-4 ${isPinned ? 'fill-current' : ''}`} />
+                </button>
+              )}
+              {currentUser?.id === author.id && (
+                <button 
                   onClick={handleDelete}
                   className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 hover:text-red-500 rounded-full transition-colors"
                 >
@@ -158,6 +176,18 @@ export const TweetCard: React.FC<TweetCardProps> = ({
                 <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
               </div>
               <span className="text-xs group-hover:text-pink-500">{likesCount}</span>
+            </button>
+
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onBookmark?.(tweet.id);
+              }}
+              className={`flex items-center space-x-2 group ${isBookmarked ? 'text-blue-500' : ''}`}
+            >
+              <div className="p-2 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-500 rounded-full transition-colors">
+                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+              </div>
             </button>
 
             <button className="flex items-center space-x-2 group">

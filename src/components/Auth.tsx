@@ -5,10 +5,11 @@ import { User } from '../types';
 interface AuthProps {
   onLogin: (email: string) => Promise<string | null>;
   onSignup: (user: User) => Promise<string | null>;
+  onGuestLogin: () => void;
   users: User[];
 }
 
-export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup, users }) => {
+export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup, onGuestLogin, users }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -134,13 +135,54 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup, users }) => {
 
           {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-bold py-3 rounded-full transition-colors shadow-sm"
-          >
-            {isLoading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer un compte')}
-          </button>
+          {isLogin ? (
+            <div className="space-y-3">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-bold py-3 rounded-full transition-colors shadow-sm"
+              >
+                {isLoading ? 'Chargement...' : 'Se connecter'}
+              </button>
+              
+              <div className="flex items-center my-4">
+                <div className="flex-1 h-[1px] bg-gray-200 dark:bg-gray-800"></div>
+                <span className="px-4 text-xs text-gray-500 font-bold uppercase">Ou</span>
+                <div className="flex-1 h-[1px] bg-gray-200 dark:bg-gray-800"></div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onGuestLogin}
+                className="w-full bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-900 dark:text-white font-bold py-3 rounded-full transition-colors border border-gray-300 dark:border-gray-700 shadow-sm"
+              >
+                Continuer en tant qu'invité
+              </button>
+            </div>
+          ) : (
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-bold py-3 rounded-full transition-colors shadow-sm"
+            >
+              {isLoading ? 'Chargement...' : 'Créer un compte'}
+            </button>
+          )}
+
+          {isLogin && (
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  const firstUser = users[0];
+                  if (firstUser) onLogin(firstUser.email);
+                }}
+                className="text-blue-500 text-sm font-bold hover:underline"
+              >
+                Passer la connexion (Mode Démo)
+              </button>
+            </div>
+          )}
         </form>
 
         <div className="mt-12 max-w-md">

@@ -9,6 +9,7 @@ import { Auth } from './components/Auth';
 import { EditProfileModal } from './components/EditProfileModal';
 import { useAppState } from './useAppState';
 import { Tweet, User } from './types';
+import { TRENDS } from './constants';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, 
@@ -39,16 +40,20 @@ export default function App() {
     login, 
     logout, 
     signup, 
+    guestLogin,
     addTweet, 
     deleteTweet, 
     toggleLike, 
     toggleRetweet,
     followUser,
     unfollowUser,
+    toggleBookmark,
+    togglePin,
     toggleTheme,
     exportData,
     resetData,
     updateProfile,
+    addNotification,
     markNotificationsRead,
     setAiPersonality,
     sendGrokMessage
@@ -63,11 +68,17 @@ export default function App() {
   const [grokInput, setGrokInput] = React.useState('');
   const [isMobileComposeOpen, setIsMobileComposeOpen] = React.useState(false);
 
-  if (!state.currentUser) {
-    return <Auth onLogin={login} onSignup={signup} users={state.users} />;
-  }
-
   const unreadNotifications = state.notifications.filter(n => !n.isRead).length;
+
+  React.useEffect(() => {
+    if (activeTab === 'notifications' && unreadNotifications > 0) {
+      markNotificationsRead();
+    }
+  }, [activeTab, unreadNotifications, markNotificationsRead]);
+
+  if (!state.currentUser) {
+    return <Auth onLogin={login} onSignup={signup} onGuestLogin={guestLogin} users={state.users} />;
+  }
 
   const handlePostTweet = (content: string, media?: string[]) => {
     const newTweet: Tweet = {
@@ -83,6 +94,7 @@ export default function App() {
 
     if (replyingTo) {
       addTweet(newTweet);
+      addNotification(replyingTo.userId, state.currentUser!.id, 'reply', replyingTo.id);
       setReplyingTo(null);
     } else {
       addTweet(newTweet);
@@ -180,6 +192,10 @@ export default function App() {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     onProfileClick={handleProfileClick}
+                    onBookmark={toggleBookmark}
+                    isBookmarked={state.bookmarks?.includes(tweet.id) || false}
+                    onPin={togglePin}
+                    isPinned={state.currentUser?.pinnedTweetId === tweet.id}
                   />
                 );
               })}
@@ -250,13 +266,16 @@ export default function App() {
                   <div 
                     key={n.id} 
                     onClick={() => handleProfileClick(n.fromUserId)}
-                    className={`p-4 border-b border-gray-200 dark:border-gray-800 flex space-x-3 cursor-pointer ${n.isRead ? '' : 'bg-blue-50/30 dark:bg-blue-900/10'}`}
+                    className={`p-4 border-b border-gray-200 dark:border-gray-800 flex space-x-3 cursor-pointer transition-colors ${n.isRead ? '' : 'bg-blue-50/30 dark:bg-blue-900/10'}`}
                   >
-                    <div className="mt-1">
+                    <div className="mt-1 relative">
                       {n.type === 'like' && <Heart className="w-8 h-8 text-pink-500 fill-current" />}
                       {n.type === 'retweet' && <Repeat2 className="w-8 h-8 text-green-500" />}
                       {n.type === 'follow' && <UserPlus className="w-8 h-8 text-blue-500 fill-current" />}
                       {n.type === 'reply' && <MessageCircle className="w-8 h-8 text-blue-500 fill-current" />}
+                      {!n.isRead && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white dark:border-black" />
+                      )}
                     </div>
                     <div>
                       <img src={fromUser?.avatar} alt="Avatar" className="w-8 h-8 rounded-full mb-2" />
@@ -366,8 +385,16 @@ export default function App() {
                   onLike={(id) => toggleLike(id, state.currentUser!.id)}
                   onRetweet={(id) => toggleRetweet(id, state.currentUser!.id)}
                   onDelete={deleteTweet}
-                  onReply={() => {}}
+                  onReply={(t) => {
+                    setReplyingTo(t);
+                    setActiveTab('home');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   onProfileClick={handleProfileClick}
+                  onBookmark={toggleBookmark}
+                  isBookmarked={state.bookmarks?.includes(tweet.id) || false}
+                  onPin={togglePin}
+                  isPinned={state.currentUser?.pinnedTweetId === tweet.id}
                 />
               ))}
             </AnimatePresence>
@@ -388,8 +415,22 @@ export default function App() {
               </div>
             </div>
             <div className="p-4">
-              <h2 className="text-xl font-extrabold mb-4">Tendances pour vous</h2>
-              {/* Trends content */}
+              <h2 className="text-xl font-extrabold mb-4 px-4">Tendances pour vous</h2>
+              <div className="flex flex-col">
+                {TRENDS.map((trend) => (
+                  <div key={trend.id} className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors cursor-pointer group">
+                    <div className="flex justify-between items-start">
+                      <span className="text-gray-500 text-xs">Tendance en France</span>
+                      <MoreHorizontal className="w-4 h-4 text-gray-500 group-hover:text-blue-500" />
+                    </div>
+                    <p className="font-bold text-base mt-0.5">{trend.name}</p>
+                    <p className="text-gray-500 text-xs mt-1">{trend.tweetCount} posts</p>
+                  </div>
+                ))}
+              </div>
+              <button className="text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-900 w-full text-left px-8 py-4 transition-colors font-bold">
+                Afficher plus
+              </button>
             </div>
           </div>
         );
@@ -429,6 +470,50 @@ export default function App() {
                     </div>
                   );
                 })
+              )}
+            </div>
+          </div>
+        );
+
+      case 'bookmarks':
+        return (
+          <div className="flex-1 min-h-screen border-r border-gray-200 dark:border-gray-800">
+            <div className="sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10 p-4 border-b border-gray-200 dark:border-gray-800">
+              <h1 className="text-xl font-bold">Signets</h1>
+              <p className="text-xs text-gray-500">@{state.currentUser?.username}</p>
+            </div>
+            <div className="flex flex-col">
+              {(!state.bookmarks || state.bookmarks.length === 0) ? (
+                <div className="flex flex-col items-center justify-center p-12 text-center">
+                  <h2 className="text-3xl font-black mb-2">Enregistrez des posts pour plus tard</h2>
+                  <p className="text-gray-500">Ne perdez pas de vue les bons posts ! Ajoutez-les à vos signets pour les retrouver facilement à l'avenir.</p>
+                </div>
+              ) : (
+                state.tweets
+                  .filter(t => state.bookmarks?.includes(t.id))
+                  .map((tweet) => {
+                    const author = state.users.find(u => u.id === tweet.userId);
+                    return (
+                      <TweetCard 
+                        key={tweet.id} 
+                        tweet={tweet} 
+                        author={author} 
+                        currentUser={state.currentUser}
+                        onLike={(id) => toggleLike(id, state.currentUser!.id)}
+                        onRetweet={(id) => toggleRetweet(id, state.currentUser!.id)}
+                        onDelete={deleteTweet}
+                        onReply={(t) => {
+                          setReplyingTo(t);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        onProfileClick={handleProfileClick}
+                        onBookmark={toggleBookmark}
+                        isBookmarked={state.bookmarks?.includes(tweet.id) || false}
+                        onPin={togglePin}
+                        isPinned={state.currentUser?.pinnedTweetId === tweet.id}
+                      />
+                    );
+                  })
               )}
             </div>
           </div>
